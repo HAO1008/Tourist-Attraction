@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tourist Attraction</title>
+  <link rel="stylesheet" href="./style2.css">
+  <!-- fontawasome -->
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" integrity="sha384-DyZ88mC6Up2uqS4h/KRgHuoeGwBcD4Ng9SiP4dIRy0EXTlnuz47vAwmeGwVChigm" crossorigin="anonymous">
+
+  <!-- axios -->
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/axios/0.9.1/axios.min.js' integrity='sha512-Xk3wWei2TGrsh9kDSBKUMIjw/86sLUvhtnv9f7fOuIwhhiUTKz8szkWkzHthrM5Bb3Bu9idSzkxOrkzhcneuiw==' crossorigin='anonymous'></script>
+
+</head>
+<body>
+  <div id="app">
+    <header :style="{background:'url('+that.src+')'}"></header>
+    <aside>
+      <span></span>
+      <i class="fas fa-plus-square" @click="openMain"></i>
+      <span></span>
+    </aside>
+    <main v-show="main">
+      <i class="fas fa-times" @click="closeMain"></i>
+      <input  v-model="input.title" type="text" placeholder="請添加地點">
+      <textarea v-model="input.tro" cols="30" rows="10" placeholder="請輸入地點介紹"></textarea>
+      <form action="/somewhere/to/upload" enctype="multipart/form-data">
+        <input ref="file" @change="changeImg" id="imgInp" name="progressbarTW_img" type="file" accept="image/gif, image/jpeg, image/png">
+      </form>
+      <button v-if="editIndex === null" @click.prevent="submitHandlar">新增</button>
+      <button v-else @click.prevent="submitHandlar">修改</button>
+    </main>
+    <section>
+      <div class="title">{{that.title}}</div>
+      <div class="tro">
+        {{that.tro}}
+        <span><i @click="editHanldar(index)" class="fas fa-edit"></i></span>
+      </div>
+    </section>
+    <ul class="nav">
+      <li v-for="(item,index) in travel" @click="changeIndex(index)">
+        <img class="active" :src="item.src" alt="">
+        <i class="fas fa-times" @click="deleteHanldar(index)"></i>
+      </li>
+    </ul>
+  </div>
+
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/3.1.5/vue.global.js' integrity='sha512-9cV9x7+o8K90ShB7ZXFst6kx0t8uBwG3I/lqitAm+haYbnMWw1j2htjI3PG92Cfhsmt+r2NkjKuwTokgqSBVRQ==' crossorigin='anonymous'></script>
+
+  <script>
+    const app = Vue.createApp({
+      data(){
+        return{
+          travel:[],
+          index:0,
+          input:{
+            title:'',
+            tro:'',
+            src:''
+          },
+          // main 開關
+          main:false,
+          // 修改
+          editIndex:null
+        }
+      },//data
+      methods:{
+        changeIndex(index){
+          this.index = index
+        },
+        openMain(){
+          this.main = true
+          // this.cancelHanldar()
+        },
+        closeMain(){
+          this.main = false
+          this.cancelHanldar()
+        },
+        // input file更新
+        changeImg(e){
+          let file = e.target.files[0]
+          let reader = new FileReader()
+          reader.onload = ()=>{
+            console.log(reader.result);
+            this.changeSrc(reader.result)
+          }
+          reader.readAsDataURL(file)
+        },
+        changeSrc(inputSrc){
+          this.input.src = inputSrc
+        },
+        // 新增input
+        submitHandlar(){
+          let {title,tro,src} = this.input
+          if(!title || !tro || !src)return
+          if(this.editIndex === null){
+            axios.post('http://localhost:3000/travel',this.input)
+            .then((res)=>{
+              this.input.push(res.data)
+            })
+          }else{
+            axios.put('http://localhost:3000/travel/'+this.travel[this.editIndex].id,this.input)
+            .then((res)=>{
+              this.travel[this.editIndex] = res.data
+            })
+            .catch((err)=>{
+              console.log(err);
+            })
+          }
+        },
+        // 刪除
+        deleteHanldar(index){
+          let target = this.travel[index]
+          if(confirm(`是否要刪除${target.title}?`)){
+            axios.delete('http://localhost:3000/travel/'+target.id)
+            .then((res)=>{
+              this.travel.splice(index,1)
+            })
+            .catch((err)=>{
+              console.log(err);
+            })
+          }
+        },
+        // 更新
+        editHanldar(index){
+          let {title,tro,src} = this.travel[index]
+          this.editIndex = index
+          this.main = true
+          this.input = {
+            title,
+            tro,
+            src
+          }
+        },
+        // 取消
+        cancelHanldar(){
+          this.editIndex = null
+          this.input.title = ''
+          this.input.tro = ''
+          this.input.src = ''
+        }
+      },//methods
+      computed:{
+        that(){
+          return this.travel[this.index]
+        }
+      },//computed
+      created(){
+        axios.get('http://localhost:3000/travel')
+        .then((res)=>{
+          this.travel = res.data
+          console.log(res.data);
+        })
+        .catch((err)=>{
+          console.log(err);
+        })
+      }//created
+    })
+    app.mount('#app')
+  </script>
+</body>
+</html>

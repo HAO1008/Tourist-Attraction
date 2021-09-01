@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tourist Attraction</title>
+
+  <!-- fontAwesome -->
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" integrity="sha384-DyZ88mC6Up2uqS4h/KRgHuoeGwBcD4Ng9SiP4dIRy0EXTlnuz47vAwmeGwVChigm" crossorigin="anonymous">
+
+  <!-- css -->
+  <link rel="stylesheet" href="./style.css">
+
+  <!-- axios -->
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/axios/0.9.1/axios.min.js' integrity='sha512-Xk3wWei2TGrsh9kDSBKUMIjw/86sLUvhtnv9f7fOuIwhhiUTKz8szkWkzHthrM5Bb3Bu9idSzkxOrkzhcneuiw==' crossorigin='anonymous'></script>
+
+</head>
+<body>
+  <div id="app">
+    <div id="container" :style="{background:'url('+that.src+')'}">
+      <div class="content-area">
+        <h1>{{that.title}}</h1>
+        <p>{{that.tro}}</p>
+        <hr>
+        <input type="text" placeholder="新增旅遊景點" v-model="input.title">
+        <textarea placeholder="請輸入資訊" cols="30" rows="10" v-model="input.tro"></textarea>
+        <form action="/somewhere/to/upload" enctype="multipart/form-data">
+          <input ref="file" @change="changeImg" id="imgInp" name="progressbarTW_img" type="file" accept="image/gif, image/jpeg, image/png">
+        </form>
+        <button id="sub" @click="submitHandlar">提交</button>
+      </div>
+    
+      <div class="menu">
+        <i class="fas fa-bars"></i>
+      </div>
+    
+      <section class="nav-bar">
+        <ul>
+          <li v-for="(item,index) in travel" :class="{active:true}" @click="changeIndex(index)">
+            <img :src="item.src" alt="">
+            <i class="fas fa-times"></i>
+          </li>
+        </ul>
+      </section>
+    </div>
+    </div>
+
+
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/3.1.5/vue.global.js' integrity='sha512-9cV9x7+o8K90ShB7ZXFst6kx0t8uBwG3I/lqitAm+haYbnMWw1j2htjI3PG92Cfhsmt+r2NkjKuwTokgqSBVRQ==' crossorigin='anonymous'></script>
+  <script>
+    const app = Vue.createApp({
+      data(){
+        return{
+          travel:[],
+          index:0,
+          // path
+          updateFile:'',
+          reader:new FileReader(),
+          fileSrc:'',
+          // path end
+          input:{
+            title:'',
+            tro:'',
+            src:''
+          },
+        }
+      },//data
+      methods:{
+        changeIndex(index){
+          this.index = index
+        },
+        // input file 更新
+        changeImg(e){
+          let file = e.target.files[0]
+          let reader = new FileReader()
+          reader.onload = ()=>{
+            this.changeSrc(reader.result)
+          }
+          reader.readAsDataURL(file)
+        },
+        changeSrc(inputSrc){
+          this.input.src = inputSrc
+        },
+        submitHandlar(){
+          let {title,tro,src} = this.input
+          if(!title || !tro || !src)return
+          axios.post('http://localhost:3000/travel',this.input)
+          .then((res)=>{
+            this.travel.push(res.data)
+          })
+        }
+      },//methods
+      computed:{
+        that(){
+          return this.travel[this.index]
+        }
+      },//computed
+      created(){
+        axios.get('http://localhost:3000/travel')
+        .then((res)=>{
+          console.log(res);
+          this.travel = res.data
+          console.log(this.travel);
+        })
+        .catch((err)=>{
+          console.log(err);
+        })
+      }
+    })
+    app.mount('#app')
+  </script>
+  <!-- <script>
+    const input = document.querySelector('#sub')
+    const img = document.querySelector('#imgInp')
+
+    img.addEventListener('change',function(){
+      const file = this.files[0]
+      if(file){
+        const reader = new FileReader()
+        reader.addEventListener('load',function(){
+          console.log(this.result);
+        })
+        reader.readAsDataURL(file)
+      }
+    })
+  </script> -->
+</body>
+</html>
